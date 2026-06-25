@@ -1,0 +1,17 @@
+# backups / local-only
+*.ORIGINAL-backup.ipynb
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# vercel / node
+.vercel
+node_modules/

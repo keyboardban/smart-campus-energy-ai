@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Campus Energy AI — Interactive Demo</title>
+<meta name="description" content="Try a smart-campus energy AI: room allocation, context-aware AC control, and anomaly detection. Based on the CU-BEMS pipeline.">
+<style>
+  :root{
+    --bg:#0F0F1A; --panel:#15152a; --panel2:#191936; --grid:#2A2A3E; --ink:#ECECF6;
+    --muted:#9A9AB8; --energy:#FF6B35; --comfort:#00B4D8; --ok:#06D6A0; --bad:#EF476F;
+    --accent2:#FEE440; --coord:#9B5DE5; --maintain:#2EC4B6;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:radial-gradient(1200px 700px at 75% -10%,#1c1c3e 0%,var(--bg) 55%);
+       color:var(--ink);font:15px/1.5 'Noto Sans Thai',-apple-system,Segoe UI,Roboto,system-ui,sans-serif}
+  a{color:var(--comfort);text-decoration:none}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+  .err{display:none;background:var(--bad);color:#fff;padding:8px 14px;font-size:13px;text-align:center}
+
+  /* nav */
+  nav{position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);
+      background:rgba(15,15,26,.75);border-bottom:1px solid var(--grid)}
+  nav .wrap{display:flex;align-items:center;gap:18px;height:56px}
+  nav .brand{font-weight:800;letter-spacing:.2px;margin-right:auto}
+  nav .brand b{background:linear-gradient(90deg,var(--energy),var(--accent2));
+               -webkit-background-clip:text;background-clip:text;color:transparent}
+  nav a.lnk{color:var(--muted);font-size:13.5px;font-weight:600}
+  nav a.lnk:hover{color:var(--ink)}
+
+  /* hero */
+  header.hero{padding:54px 0 26px}
+  .pill{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+        color:#0F0F1A;background:var(--accent2);padding:5px 10px;border-radius:7px}
+  h1{font-size:38px;line-height:1.12;margin:14px 0 10px;font-weight:850;max-width:840px}
+  h1 .g{background:linear-gradient(90deg,var(--energy),var(--accent2) 60%,var(--comfort));
+        -webkit-background-clip:text;background-clip:text;color:transparent}
+  .lede{color:var(--muted);max-width:760px;font-size:16px}
+  .lede .th{display:block;margin-top:6px;color:#C7C7E0}
+  .chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  .chip{font-size:12.5px;color:var(--ink);background:var(--panel);border:1px solid var(--grid);
+        padding:7px 11px;border-radius:999px}
+  .chip b{color:var(--energy)}
+
+  /* sections */
+  section{padding:30px 0;border-top:1px solid var(--grid)}
+  .feat-head{display:flex;gap:14px;align-items:flex-start;margin-bottom:18px}
+  .feat-no{flex:0 0 auto;width:40px;height:40px;border-radius:11px;display:grid;place-items:center;
+           font-weight:800;font-size:18px;color:#0F0F1A}
+  .f1 .feat-no{background:var(--energy)} .f2 .feat-no{background:var(--comfort)} .f3 .feat-no{background:var(--bad)}
+  .feat-head h2{margin:0 0 4px;font-size:23px}
+  .feat-head .en{color:var(--muted);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+  .feat-head .th{color:#C7C7E0;font-size:14px;max-width:760px;margin-top:6px}
+
+  .panel{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--grid);
+         border-radius:16px;padding:18px}
+  .grid2{display:grid;grid-template-columns:300px 1fr;gap:18px}
+  @media(max-width:820px){.grid2{grid-template-columns:1fr}}
+  .controls{display:flex;flex-direction:column;gap:14px}
+  .ctl label{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:5px}
+  .ctl label b{color:var(--ink)}
+  input[type=range]{width:100%;accent-color:var(--energy)}
+  .f2 input[type=range]{accent-color:var(--comfort)} .f3 input[type=range]{accent-color:var(--bad)}
+  .btn{appearance:none;border:0;cursor:pointer;font-weight:700;font-size:14px;color:#0F0F1A;
+       background:var(--energy);padding:11px 16px;border-radius:10px;width:100%}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--grid)}
+  .seg{display:flex;background:var(--bg);border:1px solid var(--grid);border-radius:10px;overflow:hidden}
+  .seg button{flex:1;background:transparent;border:0;color:var(--muted);padding:9px;font-weight:700;cursor:pointer;font-size:13px}
+  .seg button.on{background:var(--energy);color:#0F0F1A}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .stat{background:var(--bg);border:1px solid var(--grid);border-radius:11px;padding:11px 12px}
+  .stat .v{font-size:21px;font-weight:850;line-height:1.05}
+  .stat .l{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.3px;margin-top:3px}
+  .good{color:var(--ok)} .warn{color:var(--bad)} .em{color:var(--energy)} .cm{color:var(--comfort)}
+
+  /* building grid */
+  .bld-wrap{display:flex;gap:12px;flex-wrap:wrap}
+  .bld{flex:1 1 200px;background:var(--bg);border:1px solid var(--grid);border-radius:12px;padding:10px;min-width:180px}
+  .bld.off{opacity:.5}
+  .bld h4{margin:0 0 8px;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+  .bld .pw{font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px}
+  .bld .pw.on{background:rgba(255,107,53,.18);color:var(--energy)}
+  .bld .pw.dn{background:rgba(154,154,184,.16);color:var(--muted)}
+  .floor{display:flex;gap:5px;margin-bottom:5px;align-items:center}
+  .floor .fl{font-size:10px;color:var(--muted);width:26px;flex:0 0 auto}
+  .room{flex:1;height:22px;border-radius:5px;background:#20203a;border:1px solid #2c2c4a;
+        display:grid;place-items:center;font-size:9px;color:#6f6f93}
+  .room.used{background:linear-gradient(180deg,#ff8a5b,var(--energy));color:#2a1400;border-color:var(--energy);font-weight:800}
+
+  /* room control cards */
+  .rooms{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:820px){.rooms{grid-template-columns:1fr}}
+  .rc{background:var(--bg);border:1px solid var(--grid);border-radius:13px;padding:14px}
+  .rc h4{margin:0 0 10px;font-size:14px;display:flex;justify-content:space-between}
+  .rc .setp{font-size:30px;font-weight:850;color:var(--comfort)}
+  .rc .setp small{font-size:13px;color:var(--muted);font-weight:600}
+  .rc .mode{font-size:12px;color:var(--muted);min-height:32px;margin:6px 0}
+  .bar{height:9px;background:#20203a;border-radius:999px;overflow:hidden;margin-top:6px}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--ok),var(--comfort))}
+  .rc .save{font-size:12px;margin-top:5px;color:var(--ok)}
+  details.mini{margin-top:8px}
+  details.mini summary{cursor:pointer;color:var(--muted);font-size:12px}
+  .mini .ctl{margin-top:8px}
+
+  /* anomaly table */
+  .loads{display:flex;flex-direction:column;gap:8px}
+  .load{display:grid;grid-template-columns:170px 90px 1fr 120px;gap:12px;align-items:center;
+        background:var(--bg);border:1px solid var(--grid);border-radius:11px;padding:10px 12px}
+  @media(max-width:820px){.load{grid-template-columns:1fr 1fr;row-gap:6px}}
+  .load.alert{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad),0 0 18px rgba(239,71,111,.25)}
+  .load .nm{font-weight:700;font-size:13px}
+  .load .nm small{display:block;color:var(--muted);font-weight:500;font-size:11px}
+  .load .kw{font-size:18px;font-weight:800}
+  .badge{font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;text-align:center}
+  .badge.ok{background:rgba(6,214,160,.16);color:var(--ok)}
+  .badge.al{background:rgba(239,71,111,.18);color:var(--bad)}
+  .load .why{font-size:11.5px;color:var(--muted)}
+  .load.alert .why{color:#ffc4d2}
+
+  footer{padding:30px 0 50px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--grid)}
+  .tech{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+  .tech span{background:var(--panel);border:1px solid var(--grid);border-radius:7px;padding:4px 9px;font-size:11.5px}
+  .note{background:rgba(254,228,64,.08);border:1px solid rgba(254,228,64,.25);border-radius:10px;
+        padding:10px 13px;font-size:12.5px;color:#e8e2b8;margin-top:14px}
+</style>
+</head>
+<body>
+<div id="err" class="err"></div>
+
+<nav><div class="wrap">
+  <span class="brand">🏙️ <b>Smart Campus Energy AI</b></span>
+  <a class="lnk" href="#f1">Room Allocation</a>
+  <a class="lnk" href="#f2">Context-Aware Control</a>
+  <a class="lnk" href="#f3">Anomaly Detection</a>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <span class="pill">Interactive demo · ลองเล่นได้</span>
+  <h1>Save campus energy with <span class="g">AI that allocates rooms, tunes every AC, and catches waste</span></h1>
+  <p class="lede">An interactive prototype of a smart-campus energy system — three coordinated AI modules built on the
+    CU-BEMS smart-building dataset. Move the sliders and press the buttons; everything updates live.
+    <span class="th">ต้นแบบระบบจัดการพลังงานอัจฉริยะสำหรับมหาวิทยาลัย — ลองปรับค่าและกดปุ่มเพื่อดูผลแบบเรียลไทม์</span>
+  </p>
+  <div class="chips">
+    <span class="chip"><b>1.</b> Smart Room Allocation</span>
+    <span class="chip"><b>2.</b> Dynamic Context-Aware Control</span>
+    <span class="chip"><b>3.</b> Anomaly Detection</span>
+  </div>
+</div></header>
+
+<!-- ============ FEATURE 1 ============ -->
+<section id="f1" class="f1"><div class="wrap">
+  <div class="feat-head">
+    <div class="feat-no">1</div>
+    <div>
+      <div class="en">Optimization · การจัดสรร</div>
+      <h2>Smart Room Allocation</h2>
+      <p class="th">รับข้อมูลจากฝ่ายทะเบียน เช่น รายวิชา เวลาเรียน จำนวนนิสิต ความจุห้อง ประเภทห้อง และข้อจำกัดของอาคาร
+        แล้วใช้ optimization เพื่อจัดสรรห้องให้การใช้งานกระจุกตัวมากขึ้น เช่น ใช้ชั้นเดียวกัน โซนเดียวกัน หรืออาคารเดียวกันให้มากที่สุด
+        — เพื่อปิดอาคาร/ชั้นที่ไม่จำเป็นทั้งหมด</p>
+    </div>
+  </div>
+  <div class="panel grid2">
+    <div class="controls">
+      <div class="ctl"><label>Classes to schedule · จำนวนวิชา <b id="f1n">14</b></label>
+        <input type="range" id="f1classes" min="6" max="22" value="14"></div>
+      <div class="ctl"><label>Strategy · กลยุทธ์</label>
+        <div class="seg" id="f1seg">
+          <button data-w="0">Spread (naïve)</button>
+          <button data-w="1" class="on">Consolidate (AI)</button>
+        </div></div>
+      <button class="btn" id="f1run">↻ Run allocation · จัดห้องใหม่</button>
+      <div class="note" id="f1note">AI packs classes into the fewest buildings/floors so the rest power down.</div>
+    </div>
+    <div>
+      <div class="stats" id="f1stats"></div>
+      <div class="bld-wrap" id="f1grid"></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ FEATURE 2 ============ -->
+<section id="f2" class="f2"><div class="wrap">
+  <div class="feat-head">
+    <div class="feat-no">2</div>
+    <div>
+      <div class="en">Context-aware control · ควบคุมตามบริบท</div>
+      <h2>Dynamic Context-Aware Control</h2>
+      <p class="th">หลังจากจัดห้องแล้ว ห้องที่ยังจำเป็นต้องเปิดจะเข้าสู่ระบบควบคุมพลังงานแบบไดนามิก
+        จุดขายคือ ไม่ได้ตั้งแอร์ 25°C เท่ากันทุกห้อง แต่ AI จะดูสภาพจริงของแต่ละห้อง เช่น อุณหภูมิ แสง จำนวนคนจริง และสภาพอากาศภายนอก</p>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="stats" id="f2summary"></div>
+    <div class="rooms" id="f2rooms"></div>
+    <div class="note">AI setpoints follow ASHRAE-55 adaptive comfort + real occupancy/daylight. Compared against a naïve
+      “25°C everywhere, always on” baseline. ตัวเลขเป็นค่าประมาณเพื่อการสาธิต.</div>
+  </div>
+</div></section>
+
+<!-- ============ FEATURE 3 ============ -->
+<section id="f3" class="f3"><div class="wrap">
+  <div class="feat-head">
+    <div class="feat-no">3</div>
+    <div>
+      <div class="en">Anomaly detection · ตรวจจับความผิดปกติ</div>
+      <h2>Anomaly Detection</h2>
+      <p class="th">ระบบจะตรวจจับและแจ้งเตือนเองทันที โดยเฉพาะโหลดที่เสี่ยง เช่น คอมพิวเตอร์ห้องแล็บ เครื่องมือวิจัย projector
+        หรือ plug load บางประเภท ที่ยังเปิดทิ้งไว้นอกเวลา — เทียบกับค่าที่โมเดลพยากรณ์ไว้ (forecast-residual + rules)</p>
+    </div>
+  </div>
+  <div class="panel grid2">
+    <div class="controls">
+      <div class="ctl"><label>Time of day · เวลา <b id="f3time">22:00</b></label>
+        <input type="range" id="f3hour" min="0" max="23" value="22"></div>
+      <button class="btn" id="f3inject">⚡ Inject anomaly · จำลองความผิดปกติ</button>
+      <button class="btn ghost" id="f3reset">Reset</button>
+      <div class="note">Risky lab/research/projector loads left on after hours are flagged automatically. A 24/7 freezer
+        staying on at night is <b>not</b> flagged — the detector knows its normal pattern.</div>
+    </div>
+    <div>
+      <div class="stats" id="f3stats"></div>
+      <div class="loads" id="f3loads"></div>
+    </div>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <b>How it works.</b> This is an interactive prototype tied to a real forecasting/optimization pipeline on the
+  <b>CU-BEMS</b> smart-building dataset (Chulalongkorn University, 2018–2019). The allocation uses a greedy
+  consolidation heuristic; control uses adaptive-comfort logic; anomaly detection uses forecast-residual + rule logic.
+  Figures are <b>illustrative</b> for demonstration, not validated bills.
+  <div class="tech">
+    <span>Optimization (consolidation)</span><span>ASHRAE-55 adaptive comfort</span>
+    <span>Forecast-residual anomaly</span><span>scikit-learn / Chronos pipeline</span>
+    <span>Vanilla JS · zero dependencies</span><span>Deployable on Vercel</span>
+  </div>
+</div></footer>
+
+<script>
+window.onerror = function(m){ var e=document.getElementById('err'); e.style.display='block'; e.textContent='JS error: '+m; };
+const $=s=>document.querySelector(s), el=(t,a)=>Object.assign(document.createElement(t),a||{});
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rnd=(a,b)=>a+Math.random()*(b-a);
+
+/* ===================== FEATURE 1 — Room Allocation ===================== */
+const BUILDINGS=[
+  {id:'ENG',name:'Engineering',floors:3},
+  {id:'SCI',name:'Science',floors:3},
+  {id:'ARTS',name:'Arts',floors:2},
+];
+const ROOM_TYPES=[{t:'lab',cap:24},{t:'classroom',cap:40},{t:'lecture',cap:80}];
+function buildRooms(){
+  const rooms=[];
+  BUILDINGS.forEach((b,bi)=>{
+    for(let f=1;f<=b.floors;f++) for(let z=0;z<2;z++) for(let r=0;r<2;r++){
+      const ty=ROOM_TYPES[(f+z+r)%3];
+      rooms.push({id:`${b.id}-${f}${'AB'[z]}${r+1}`,bld:b.id,bi,floor:f,zone:'AB'[z],
+                  type:ty.t,cap:ty.cap});
+    }
+  });
+  return rooms;
+}
+function buildClasses(n){
+  const out=[];
+  for(let i=0;i<n;i++){
+    const ty=ROOM_TYPES[Math.floor(rnd(0,3))];
+    out.push({id:'C'+(i+1),students:Math.round(rnd(0.5,1.0)*ty.cap+rnd(-6,8)),
+              type:ty.t,slot:Math.floor(rnd(0,4))});
+  }
+  return out;
+}
+const BASE_KWH=120, ROOM_KWH=18; // illustrative per-day loads
+function allocate(rooms,classes,w){ // w=1 consolidate, w=0 spread
+  const usedRoomIds=new Set();
+  const bldOrder=[...BUILDINGS.keys()];
+  for(let slot=0;slot<4;slot++){
+    const cls=classes.filter(c=>c.slot===slot).sort((a,b)=>b.students-a.students);
+    const busy=new Set(); // rooms used this slot
+    cls.forEach(c=>{
+      const cand=rooms.filter(r=>r.type===c.type && r.cap>=c.students && !busy.has(r.id));
+      if(!cand.length){ // fallback: any fitting room
+        const any=rooms.filter(r=>r.cap>=c.students && !busy.has(r.id));
+        if(any.length) cand.push(...any);
+      }
+      if(!cand.length) return;
+      cand.forEach(r=>{
+        let s=0;
+        if(w>0){ // consolidate: reward already-active building/floor/zone
+          const bldActive=[...usedRoomIds].some(id=>id.startsWith(r.bld));
+          const flActive=[...usedRoomIds].some(id=>id.startsWith(`${r.bld}-${r.floor}`));
+          s += (bldActive?6:0)+(flActive?3:0) - r.bi*0.4; // funnel into one building
+        } else { // spread: prefer emptier buildings -> uses more buildings
+          const usedInBld=[...usedRoomIds].filter(id=>id.startsWith(r.bld)).length;
+          s += -usedInBld*2 + Math.random()*0.5;
+        }
+        s -= (r.cap-c.students)/100; // tight fit (less wasted capacity)
+        r._s=s;
+      });
+      cand.sort((a,b)=>b._s-a._s);
+      const pick=cand[0]; busy.add(pick.id); usedRoomIds.add(pick.id);
+    });
+  }
+  const activeBld=new Set([...usedRoomIds].map(id=>id.split('-')[0]));
+  const kwh=activeBld.size*BASE_KWH+usedRoomIds.size*ROOM_KWH;
+  return {usedRoomIds,activeBld,kwh,usedRooms:usedRoomIds.size};
+}
+let F1_ROOMS=buildRooms(), F1_W=1;
+function renderF1(){
+  const n=+$('#f1classes').value; $('#f1n').textContent=n;
+  const classes=buildClasses(n);
+  const ai=allocate(F1_ROOMS,classes,1);
+  const spread=allocate(F1_ROOMS,classes,0);
+  const chosen=F1_W? ai: spread;
+  const saved=Math.max(0,spread.kwh-ai.kwh), pct=spread.kwh? saved/spread.kwh*100:0;
+  // stats
+  $('#f1stats').innerHTML=[
+    ['Buildings ON',`<span class="em">${chosen.activeBld.size}</span> / 3`],
+    ['Rooms used',`${chosen.usedRooms} / ${F1_ROOMS.length}`],
+    ['Rooms kept OFF',`<span class="good">${F1_ROOMS.length-chosen.usedRooms}</span>`],
+    [F1_W?'Saved vs spread':'Extra vs AI', F1_W?`<span class="good">${pct.toFixed(0)}%</span>`:`<span class="warn">+${(spread.kwh-ai.kwh).toFixed(0)} kWh</span>`],
+  ].map(s=>`<div class="stat"><div class="v">${s[1]}</div><div class="l">${s[0]}</div></div>`).join('');
+  // grid
+  $('#f1grid').innerHTML=BUILDINGS.map(b=>{
+    const on=chosen.activeBld.has(b.id);
+    let floors='';
+    for(let f=1;f<=b.floors;f++){
+      const cells=F1_ROOMS.filter(r=>r.bld===b.id&&r.floor===f).map(r=>{
+        const used=chosen.usedRoomIds.has(r.id);
+        return `<div class="room ${used?'used':''}" title="${r.id} · ${r.type} · cap ${r.cap}">${used?r.id.slice(-3):'·'}</div>`;
+      }).join('');
+      floors+=`<div class="floor"><span class="fl">F${f}</span>${cells}</div>`;
+    }
+    return `<div class="bld ${on?'':'off'}"><h4>${b.name}
+      <span class="pw ${on?'on':'dn'}">${on?'POWERED':'OFF'}</span></h4>${floors}</div>`;
+  }).join('');
+  $('#f1note').innerHTML = F1_W
+    ? `AI consolidated into <b>${chosen.activeBld.size}</b> building(s) — the other <b>${3-chosen.activeBld.size}</b> can power down, saving ~<b>${saved.toFixed(0)} kWh/day</b> of base load.`
+    : `Naïve spread lights up <b>${chosen.activeBld.size}</b> buildings. Switch to <b>Consolidate</b> to see the AI shut buildings down.`;
+}
+$('#f1classes').oninput=renderF1;
+$('#f1run').onclick=()=>{F1_ROOMS=buildRooms();renderF1();};
+$('#f1seg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  $('#f1seg').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); F1_W=+b.dataset.w; renderF1();
+});
+
+/* ===================== FEATURE 2 — Context-Aware Control ===================== */
+const F2_ROOMS=[
+  {name:'Lecture Hall LH-301',outdoor:36,occ:85,indoor:24,lux:300},
+  {name:'Lab CR-204',outdoor:34,occ:8,indoor:23,lux:650},
+  {name:'Studio AR-110',outdoor:33,occ:45,indoor:26,lux:780},
+];
+function recommend(r){
+  let set=clamp(0.255*r.outdoor+18.6,23.5,27); // ASHRAE-55 adaptive (cooling)
+  let mode='Cooling to adaptive comfort', notes=[];
+  if(r.occ===0){ set=31; mode='Unoccupied → AC standby'; notes.push('No people → AC off, vent only'); }
+  else if(r.occ<20){ set=clamp(set+1.5,24,28.5); notes.push('Low occupancy → setpoint relaxed +1.5°C'); }
+  else if(r.occ>80){ set=clamp(set-0.5,23,27); notes.push('Near-full → slightly cooler for comfort'); }
+  if(r.lux>550) notes.push('Daylight harvesting → lights dimmed');
+  // energy vs uniform 25°C, always-on
+  const uniform=Math.max(0.3,r.outdoor-25)*1.0;
+  const ai=(r.occ===0?0.05:Math.max(0,r.outdoor-set)*(0.45+0.55*r.occ/100));
+  const save=clamp((1-ai/uniform)*100,0,98);
+  return {set,mode,notes,save};
+}
+function renderF2(){
+  let tot=0;
+  $('#f2rooms').innerHTML=F2_ROOMS.map((r,i)=>{
+    const rec=recommend(r); tot+=rec.save;
+    return `<div class="rc">
+      <h4>${r.name}</h4>
+      <div class="setp">${rec.set.toFixed(1)}<small>°C AI setpoint</small></div>
+      <div class="mode">${rec.mode}${rec.notes.length?'<br>• '+rec.notes.join('<br>• '):''}</div>
+      <div class="bar"><i style="width:${rec.save.toFixed(0)}%"></i></div>
+      <div class="save">↓ ~${rec.save.toFixed(0)}% AC energy vs uniform 25°C</div>
+      <details class="mini"><summary>Adjust real conditions ▾</summary>
+        <div class="ctl"><label>Outdoor temp <b>${r.outdoor}°C</b></label><input type="range" data-i="${i}" data-k="outdoor" min="28" max="40" value="${r.outdoor}"></div>
+        <div class="ctl"><label>Actual occupancy <b>${r.occ}%</b></label><input type="range" data-i="${i}" data-k="occ" min="0" max="100" value="${r.occ}"></div>
+        <div class="ctl"><label>Daylight <b>${r.lux} lux</b></label><input type="range" data-i="${i}" data-k="lux" min="0" max="1000" value="${r.lux}"></div>
+      </details>
+    </div>`;
+  }).join('');
+  $('#f2rooms').querySelectorAll('input[type=range]').forEach(inp=>{
+    inp.oninput=()=>{ F2_ROOMS[+inp.dataset.i][inp.dataset.k]=+inp.value; renderF2(); };
+  });
+  const avg=tot/F2_ROOMS.length;
+  $('#f2summary').innerHTML=[
+    ['Avg AC saving', `<span class="good">${avg.toFixed(0)}%</span>`],
+    ['Uniform baseline','25°C · always on'],
+    ['AI strategy','Per-room adaptive'],
+    ['Rooms tuned',`${F2_ROOMS.length}`],
+  ].map(s=>`<div class="stat"><div class="v">${s[1]}</div><div class="l">${s[0]}</div></div>`).join('');
+}
+
+/* ===================== FEATURE 3 — Anomaly Detection ===================== */
+const F3_LOADS=[
+  {name:'Lab PC cluster',loc:'CR-204',peak:6.0,risky:true,always:false},
+  {name:'Research freezer',loc:'BIO-lab',peak:1.4,risky:true,always:true},
+  {name:'Projector',loc:'LH-301',peak:0.35,risky:true,always:false},
+  {name:'Plug load (studio)',loc:'AR-110',peak:2.2,risky:false,always:false},
+  {name:'HVAC pump',loc:'Plant',peak:5.0,risky:false,always:false},
+];
+function expected(load,h){ // expected kW by hour
+  if(load.always) return load.peak*(0.85+0.1*Math.sin(h/24*6.28));
+  const occ=(h>=8&&h<=18)?1:(h>=7&&h<20?0.3:0.04);
+  return load.peak*occ;
+}
+let F3_ACT=null;
+function buildActuals(){
+  F3_ACT=F3_LOADS.map(load=>{
+    const arr=[];
+    for(let h=0;h<24;h++){ arr.push(Math.max(0,expected(load,h)*(0.92+rnd(-0.06,0.06)))); }
+    return arr;
+  });
+  // built-in anomalies: projector left on 20-23, lab PC spike at 14
+  const pj=F3_LOADS.findIndex(l=>l.name==='Projector');
+  for(let h=20;h<=23;h++) F3_ACT[pj][h]=0.33;
+  const pc=F3_LOADS.findIndex(l=>l.name==='Lab PC cluster');
+  F3_ACT[pc][14]=F3_LOADS[pc].peak*1.9;
+}
+function detect(i,h){
+  const load=F3_LOADS[i], act=F3_ACT[i][h], exp=expected(load,h);
+  const sigma=Math.max(0.08,load.peak*0.12);
+  const z=(act-exp)/sigma;
+  // 24/7 loads: only spike anomalies count
+  if(load.always){ if(z>3.2) return{al:true,why:`Abnormal spike (z=${z.toFixed(1)})`,z}; return{al:false,why:'Normal 24/7 pattern',z}; }
+  const afterHours=(h<7||h>=19);
+  if(load.risky && afterHours && act>0.15*load.peak)
+    return{al:true,why:`Risky load ON after hours (${h}:00) — likely left on`,z};
+  if(z>3) return{al:true,why:`Spike vs forecast (z=${z.toFixed(1)})`,z};
+  return{al:false,why:act<0.05?'Idle / off':'Within expected range',z};
+}
+function spark(arr,h,alertHours){
+  const W=120,H=34,mx=Math.max(...arr,0.1);
+  const X=i=>4+i/23*(W-8), Y=v=>H-3-(v/mx)*(H-8);
+  let p='';arr.forEach((v,i)=>p+=(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' ');
+  let dots=alertHours.map(hh=>`<circle cx="${X(hh)}" cy="${Y(arr[hh])}" r="2.6" fill="#EF476F"/>`).join('');
+  return `<svg width="${W}" height="${H}"><path d="${p}" fill="none" stroke="#5b5b80" stroke-width="1.4"/>
+    ${dots}<line x1="${X(h)}" y1="2" x2="${X(h)}" y2="${H-2}" stroke="#FEE440" stroke-width="1.2" opacity=".8"/>
+    <circle cx="${X(h)}" cy="${Y(arr[h])}" r="3" fill="#FEE440"/></svg>`;
+}
+function renderF3(){
+  const h=+$('#f3hour').value; $('#f3time').textContent=String(h).padStart(2,'0')+':00';
+  let alerts=0;
+  $('#f3loads').innerHTML=F3_LOADS.map((load,i)=>{
+    const d=detect(i,h), act=F3_ACT[i][h];
+    const alertHours=[]; for(let hh=0;hh<24;hh++) if(detect(i,hh).al) alertHours.push(hh);
+    if(d.al) alerts++;
+    return `<div class="load ${d.al?'alert':''}">
+      <div class="nm">${load.name}<small>${load.loc}${load.risky?' · risky':''}</small></div>
+      <div class="kw ${d.al?'warn':''}">${act.toFixed(2)}<small style="font-size:11px;color:var(--muted)"> kW</small></div>
+      <div>${spark(F3_ACT[i],h,alertHours)}</div>
+      <div><span class="badge ${d.al?'al':'ok'}">${d.al?'⚠ ANOMALY':'OK'}</span>
+        <div class="why">${d.why}</div></div>
+    </div>`;
+  }).join('');
+  $('#f3stats').innerHTML=[
+    ['Time',String(h).padStart(2,'0')+':00'],
+    ['Loads monitored',F3_LOADS.length],
+    ['Anomalies now',`<span class="${alerts?'warn':'good'}">${alerts}</span>`],
+    ['Action',alerts?'<span class="warn">Alert facilities</span>':'<span class="good">All clear</span>'],
+  ].map(s=>`<div class="stat"><div class="v">${s[1]}</div><div class="l">${s[0]}</div></div>`).join('');
+}
+$('#f3hour').oninput=renderF3;
+$('#f3inject').onclick=()=>{ const i=Math.floor(rnd(0,F3_LOADS.length)),h=+$('#f3hour').value;
+  F3_ACT[i][h]=F3_LOADS[i].peak*2.4; renderF3(); };
+$('#f3reset').onclick=()=>{ buildActuals(); renderF3(); };
+
+/* ===================== init ===================== */
+renderF1(); renderF2(); buildActuals(); renderF3();
+</script>
+</body>
+</html>

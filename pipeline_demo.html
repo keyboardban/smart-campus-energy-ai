@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chulalongkorn Smart Campus Energy Intelligence — Pipeline Demo</title>
+<style>
+  :root{
+    --bg:#0F0F1A; --panel:#15152a; --panel2:#191934; --grid:#2A2A3E; --ink:#EDEDF5;
+    --muted:#9A9AB5; --energy:#FF6B35; --comfort:#00B4D8; --accent2:#FEE440;
+    --ok:#06D6A0; --bad:#EF476F; --coord:#9B5DE5; --maintain:#2EC4B6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#1b1b3a 0%,var(--bg) 60%);
+       color:var(--ink);font:14px/1.45 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:1280px;margin:0 auto;padding:26px 26px 40px}
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;
+         border-bottom:1px solid var(--grid);padding-bottom:16px;margin-bottom:18px}
+  h1{font-size:23px;margin:0 0 4px;font-weight:800;letter-spacing:.2px}
+  h1 .accent{background:linear-gradient(90deg,var(--energy),var(--accent2));
+             -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:13px;max-width:760px}
+  .badge{flex:0 0 auto;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+         color:#0F0F1A;background:var(--accent2);padding:5px 9px;border-radius:6px;white-space:nowrap}
+  .cards{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:18px 0 8px}
+  .card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--grid);
+        border-radius:12px;padding:12px 13px}
+  .card .v{font-size:22px;font-weight:800;line-height:1.1}
+  .card .l{color:var(--muted);font-size:11px;margin-top:3px;text-transform:uppercase;letter-spacing:.3px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .panel{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--grid);
+         border-radius:14px;padding:14px 16px 10px;margin-top:16px}
+  .panel h2{font-size:14px;margin:0 0 2px;font-weight:700}
+  .panel .cap{color:var(--muted);font-size:12px;margin:0 0 8px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin:2px 0 6px;font-size:12px;color:var(--muted)}
+  .legend i{display:inline-block;width:18px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--grid);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.3px}
+  tr.rej{background:rgba(239,71,111,.10)}
+  .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px}
+  .pill.ok{background:rgba(6,214,160,.16);color:var(--ok)}
+  .pill.rej{background:rgba(239,71,111,.16);color:var(--bad)}
+  .mono{font-variant-numeric:tabular-nums}
+  footer{color:var(--muted);font-size:11.5px;margin-top:18px;border-top:1px solid var(--grid);padding-top:12px}
+  svg text{fill:var(--muted);font-size:10px}
+</style></head>
+<body><div class="wrap">
+  <header>
+    <div>
+      <h1>🏙️ <span class="accent">Chulalongkorn Smart Campus</span> Energy Intelligence</h1>
+      <div class="sub">Foundation-model-ready forecasting &amp; a multi-agent optimizer on CU-BEMS.
+        Every panel below is rendered from <b>actual pipeline outputs</b> — leakage-safe forecasts,
+        an evidence-based model leaderboard, forecast-residual anomalies, and a comfort-aware agent coordinator.</div>
+    </div>
+    <div class="badge">Demo data</div>
+  </header>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="panel">
+    <h2 id="fcTitle">Day-ahead-grade forecast vs actual</h2>
+    <p class="cap">One-hour-ahead forecast on the held-out test window (chronological split). The learned
+       model tracks the load and beats the seasonal-naïve baseline.</p>
+    <div class="legend">
+      <span><i style="background:#EDEDF5"></i>Actual</span>
+      <span><i style="background:var(--energy)"></i><span id="fcModel">Model</span></span>
+      <span><i style="background:var(--comfort)"></i>Seasonal-naïve</span>
+    </div>
+    <div id="fc"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>Model leaderboard — who actually wins?</h2>
+      <p class="cap">MAE on the same test window (lower is better). <b>ML</b> = feature-based;
+         <b>baseline</b> = no training. MASE&lt;1 ⇒ beats seasonal-naïve.</p>
+      <div class="legend">
+        <span><i style="background:var(--energy)"></i>ML</span>
+        <span><i style="background:var(--comfort)"></i>Baseline</span>
+        <span><i style="background:var(--coord)"></i>Foundation</span>
+      </div>
+      <div id="lb"></div>
+    </div>
+    <div class="panel">
+      <h2>Learned daily signature</h2>
+      <p class="cap">Average load by hour — the weekday/weekend split the features encode
+         (cyclic hour, working-hours flag) and the model exploits.</p>
+      <div class="legend">
+        <span><i style="background:var(--energy)"></i>Weekday</span>
+        <span><i style="background:var(--comfort)"></i>Weekend</span>
+      </div>
+      <div id="daily"></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>Explainable anomaly detection</h2>
+      <p class="cap">Anomaly = forecast surprise, score = |actual−forecast| / σ<sub>val</sub>.
+         Red points exceed the threshold — flagged <i>and</i> explained, not a black box.</p>
+      <div class="legend">
+        <span><i style="background:#EDEDF5"></i>Actual</span>
+        <span><i style="background:var(--comfort)"></i>Forecast</span>
+        <span><i style="background:var(--bad)"></i>Anomaly</span>
+      </div>
+      <div id="anom"></div>
+    </div>
+    <div class="panel">
+      <h2>Multi-agent coordinator — ranked actions</h2>
+      <p class="cap">Six agents propose; the coordinator <b>vetoes comfort-violating</b> actions and
+         ranks the rest by savings × confidence × (1−risk).</p>
+      <div id="agents"></div>
+    </div>
+  </div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+const DATA = {"forecast": {"labels": ["Thu 21 00h", "Thu 21 01h", "Thu 21 02h", "Thu 21 03h", "Thu 21 04h", "Thu 21 05h", "Thu 21 06h", "Thu 21 07h", "Thu 21 08h", "Thu 21 09h", "Thu 21 10h", "Thu 21 11h", "Thu 21 12h", "Thu 21 13h", "Thu 21 14h", "Thu 21 15h", "Thu 21 16h", "Thu 21 17h", "Thu 21 18h", "Thu 21 19h", "Thu 21 20h", "Thu 21 21h", "Thu 21 22h", "Thu 21 23h", "Fri 22 00h", "Fri 22 01h", "Fri 22 02h", "Fri 22 03h", "Fri 22 04h", "Fri 22 05h", "Fri 22 06h", "Fri 22 07h", "Fri 22 08h", "Fri 22 09h", "Fri 22 10h", "Fri 22 11h", "Fri 22 12h", "Fri 22 13h", "Fri 22 14h", "Fri 22 15h", "Fri 22 16h", "Fri 22 17h", "Fri 22 18h", "Fri 22 19h", "Fri 22 20h", "Fri 22 21h", "Fri 22 22h", "Fri 22 23h", "Sat 23 00h", "Sat 23 01h", "Sat 23 02h", "Sat 23 03h", "Sat 23 04h", "Sat 23 05h", "Sat 23 06h", "Sat 23 07h", "Sat 23 08h", "Sat 23 09h", "Sat 23 10h", "Sat 23 11h", "Sat 23 12h", "Sat 23 13h", "Sat 23 14h", "Sat 23 15h", "Sat 23 16h", "Sat 23 17h", "Sat 23 18h", "Sat 23 19h", "Sat 23 20h", "Sat 23 21h", "Sat 23 22h", "Sat 23 23h", "Sun 24 00h", "Sun 24 01h", "Sun 24 02h", "Sun 24 03h", "Sun 24 04h", "Sun 24 05h", "Sun 24 06h", "Sun 24 07h", "Sun 24 08h", "Sun 24 09h", "Sun 24 10h", "Sun 24 11h", "Sun 24 12h", "Sun 24 13h", "Sun 24 14h", "Sun 24 15h", "Sun 24 16h", "Sun 24 17h", "Sun 24 18h", "Sun 24 19h", "Sun 24 20h", "Sun 24 21h", "Sun 24 22h", "Sun 24 23h", "Mon 25 00h", "Mon 25 01h", "Mon 25 02h", "Mon 25 03h", "Mon 25 04h", "Mon 25 05h", "Mon 25 06h", "Mon 25 07h", "Mon 25 08h", "Mon 25 09h", "Mon 25 10h", "Mon 25 11h", "Mon 25 12h", "Mon 25 13h", "Mon 25 14h", "Mon 25 15h", "Mon 25 16h", "Mon 25 17h", "Mon 25 18h", "Mon 25 19h", "Mon 25 20h", "Mon 25 21h", "Mon 25 22h", "Mon 25 23h", "Tue 26 00h", "Tue 26 01h", "Tue 26 02h", "Tue 26 03h", "Tue 26 04h", "Tue 26 05h", "Tue 26 06h", "Tue 26 07h", "Tue 26 08h", "Tue 26 09h", "Tue 26 10h", "Tue 26 11h", "Tue 26 12h", "Tue 26 13h", "Tue 26 14h", "Tue 26 15h", "Tue 26 16h", "Tue 26 17h", "Tue 26 18h", "Tue 26 19h", "Tue 26 20h", "Tue 26 21h", "Tue 26 22h", "Tue 26 23h", "Wed 27 00h", "Wed 27 01h", "Wed 27 02h", "Wed 27 03h", "Wed 27 04h", "Wed 27 05h", "Wed 27 06h", "Wed 27 07h", "Wed 27 08h", "Wed 27 09h", "Wed 27 10h", "Wed 27 11h", "Wed 27 12h", "Wed 27 13h", "Wed 27 14h", "Wed 27 15h", "Wed 27 16h", "Wed 27 17h", "Wed 27 18h", "Wed 27 19h", "Wed 27 20h", "Wed 27 21h", "Wed 27 22h", "Wed 27 23h", "Thu 28 00h", "Thu 28 01h", "Thu 28 02h", "Thu 28 03h", "Thu 28 04h", "Thu 28 05h", "Thu 28 06h", "Thu 28 07h", "Thu 28 08h", "Thu 28 09h", "Thu 28 10h", "Thu 28 11h", "Thu 28 12h", "Thu 28 13h", "Thu 28 14h", "Thu 28 15h", "Thu 28 16h", "Thu 28 17h", "Thu 28 18h", "Thu 28 19h", "Thu 28 20h", "Thu 28 21h", "Thu 28 22h", "Thu 28 23h"], "actual": [72.6, 71.8, 73.8, 77.0, 82.7, 93.8, 110.2, 143.0, 197.9, 247.9, 322.7, 400.1, 447.6, 463.0, 403.7, 333.6, 250.0, 200.9, 149.3, 112.4, 93.1, 82.3, 76.7, 73.7, 71.3, 71.7, 73.6, 77.3, 82.7, 93.4, 112.6, 139.2, 188.8, 246.0, 325.3, 408.9, 442.1, 450.9, 406.2, 342.8, 254.9, 191.0, 146.6, 114.8, 94.1, 81.9, 76.2, 73.7, 70.6, 73.0, 71.4, 71.9, 73.0, 73.7, 74.3, 76.5, 77.1, 82.1, 84.1, 86.6, 88.5, 88.4, 87.1, 85.1, 81.3, 78.4, 75.8, 74.4, 73.8, 72.0, 72.3, 71.8, 72.1, 71.7, 72.4, 72.8, 71.8, 73.4, 75.5, 76.4, 78.2, 82.8, 83.9, 86.3, 89.2, 87.8, 86.4, 85.5, 81.4, 78.7, 78.2, 74.8, 73.5, 72.8, 71.9, 71.5, 71.7, 72.5, 73.4, 77.1, 82.6, 92.9, 111.9, 146.9, 191.9, 242.4, 315.4, 373.7, 425.9, 431.8, 408.3, 319.9, 261.8, 187.2, 146.3, 113.6, 93.5, 82.7, 77.5, 74.3, 72.2, 73.0, 73.5, 75.9, 82.2, 92.9, 108.5, 139.8, 186.1, 256.9, 331.8, 391.1, 441.8, 434.0, 388.0, 324.1, 253.5, 193.3, 147.9, 111.3, 94.5, 83.2, 76.5, 74.3, 72.0, 72.9, 73.2, 75.9, 83.0, 92.3, 109.4, 143.4, 179.7, 240.8, 327.9, 391.0, 429.4, 433.9, 391.2, 323.1, 252.5, 195.0, 148.0, 114.4, 93.2, 83.2, 78.4, 74.3, 71.5, 72.7, 75.1, 76.8, 82.7, 94.6, 110.0, 140.6, 187.8, 247.1, 316.0, 374.9, 417.0, 426.5, 386.2, 317.7, 251.2, 190.9, 141.4, 114.0, 94.2, 83.6, 77.4, 74.2], "pred": [81.0, 76.4, 81.2, 88.8, 99.6, 111.9, 131.9, 158.9, 206.8, 322.1, 381.4, 464.7, 540.1, 547.9, 506.0, 407.8, 330.0, 257.0, 221.1, 131.0, 95.6, 94.6, 90.7, 85.1, 84.3, 68.4, 74.2, 81.9, 90.1, 101.6, 120.7, 151.2, 185.0, 295.4, 365.1, 432.1, 509.3, 500.6, 459.1, 388.0, 303.1, 228.3, 181.1, 113.8, 93.9, 80.5, 76.9, 76.0, 76.1, 48.4, 55.4, 58.9, 63.1, 71.8, 77.3, 82.1, 88.4, 91.0, 96.1, 94.7, 94.7, 95.0, 93.2, 90.2, 87.7, 80.8, 75.5, 69.0, 64.5, 60.7, 55.3, 55.3, 54.7, 44.2, 46.9, 52.5, 57.9, 62.6, 71.1, 80.3, 85.4, 90.3, 99.2, 98.9, 96.6, 98.8, 92.7, 87.5, 84.6, 75.5, 69.0, 66.2, 57.7, 53.2, 51.7, 50.2, 49.4, 64.2, 67.8, 73.8, 83.1, 96.6, 115.7, 143.8, 185.4, 292.0, 344.6, 430.1, 472.6, 484.5, 462.2, 391.0, 275.9, 223.0, 178.6, 100.0, 92.2, 76.0, 75.2, 73.2, 71.2, 62.9, 68.9, 74.7, 83.2, 98.1, 116.6, 141.1, 181.8, 289.8, 367.7, 425.6, 469.9, 485.0, 439.0, 370.5, 305.0, 234.7, 186.9, 107.6, 87.0, 79.2, 76.1, 69.3, 71.1, 66.4, 70.8, 77.0, 85.9, 101.5, 117.8, 143.8, 188.6, 284.7, 350.4, 441.6, 484.3, 477.8, 440.4, 359.4, 285.6, 228.4, 184.7, 105.8, 85.1, 78.9, 77.0, 75.1, 71.7, 67.3, 73.3, 81.3, 88.2, 101.4, 122.4, 144.4, 185.5, 297.7, 349.5, 413.8, 463.2, 479.1, 460.3, 370.4, 284.6, 223.2, 192.1, 107.0, 93.7, 84.9, 77.8, 76.3], "sn": [72.4, 72.2, 73.7, 77.2, 83.9, 93.7, 112.8, 145.3, 195.1, 257.8, 340.6, 420.3, 457.3, 445.5, 395.8, 337.8, 266.4, 192.9, 145.7, 110.9, 94.2, 83.6, 76.9, 73.2, 72.6, 71.8, 73.8, 77.0, 82.7, 93.8, 110.2, 143.0, 197.9, 247.9, 322.7, 400.1, 447.6, 463.0, 403.7, 333.6, 250.0, 200.9, 149.3, 112.4, 93.1, 82.3, 76.7, 73.7, 71.3, 71.7, 73.6, 77.3, 82.7, 93.4, 112.6, 139.2, 188.8, 246.0, 325.3, 408.9, 442.1, 450.9, 406.2, 342.8, 254.9, 191.0, 146.6, 114.8, 94.1, 81.9, 76.2, 73.7, 70.6, 73.0, 71.4, 71.9, 73.0, 73.7, 74.3, 76.5, 77.1, 82.1, 84.1, 86.6, 88.5, 88.4, 87.1, 85.1, 81.3, 78.4, 75.8, 74.4, 73.8, 72.0, 72.3, 71.8, 72.1, 71.7, 72.4, 72.8, 71.8, 73.4, 75.5, 76.4, 78.2, 82.8, 83.9, 86.3, 89.2, 87.8, 86.4, 85.5, 81.4, 78.7, 78.2, 74.8, 73.5, 72.8, 71.9, 71.5, 71.7, 72.5, 73.4, 77.1, 82.6, 92.9, 111.9, 146.9, 191.9, 242.4, 315.4, 373.7, 425.9, 431.8, 408.3, 319.9, 261.8, 187.2, 146.3, 113.6, 93.5, 82.7, 77.5, 74.3, 72.2, 73.0, 73.5, 75.9, 82.2, 92.9, 108.5, 139.8, 186.1, 256.9, 331.8, 391.1, 441.8, 434.0, 388.0, 324.1, 253.5, 193.3, 147.9, 111.3, 94.5, 83.2, 76.5, 74.3, 72.0, 72.9, 73.2, 75.9, 83.0, 92.3, 109.4, 143.4, 179.7, 240.8, 327.9, 391.0, 429.4, 433.9, 391.2, 323.1, 252.5, 195.0, 148.0, 114.4, 93.2, 83.2, 78.4, 74.3], "model": "Ridge"}, "leaderboard": {"h1": [{"model": "Ridge", "type": "ml", "MAE": 22.4, "MASE": 0.347}, {"model": "Persistence", "type": "baseline", "MAE": 26.6, "MASE": 0.411}, {"model": "HistGBM", "type": "ml", "MAE": 36.9, "MASE": 0.571}, {"model": "SeasonalNaive", "type": "baseline", "MAE": 37.5, "MASE": 0.58}, {"model": "RandomForest", "type": "ml", "MAE": 39.3, "MASE": 0.607}], "h24": [{"model": "RandomForest", "type": "ml", "MAE": 21.8, "MASE": 0.337}, {"model": "HistGBM", "type": "ml", "MAE": 25.7, "MASE": 0.397}, {"model": "Persistence", "type": "baseline", "MAE": 31.3, "MASE": 0.484}, {"model": "SeasonalNaive", "type": "baseline", "MAE": 31.3, "MASE": 0.484}, {"model": "Ridge", "type": "ml", "MAE": 96.0, "MASE": 1.484}]}, "anomaly": {"labels": ["02-19 00h", "02-19 01h", "02-19 02h", "02-19 03h", "02-19 04h", "02-19 05h", "02-19 06h", "02-19 07h", "02-19 08h", "02-19 09h", "02-19 10h", "02-19 11h", "02-19 12h", "02-19 13h", "02-19 14h", "02-19 15h", "02-19 16h", "02-19 17h", "02-19 18h", "02-19 19h", "02-19 20h", "02-19 21h", "02-19 22h", "02-19 23h", "02-20 00h", "02-20 01h", "02-20 02h", "02-20 03h", "02-20 04h", "02-20 05h", "02-20 06h", "02-20 07h", "02-20 08h", "02-20 09h", "02-20 10h", "02-20 11h", "02-20 12h", "02-20 13h", "02-20 14h", "02-20 15h", "02-20 16h", "02-20 17h", "02-20 18h", "02-20 19h", "02-20 20h", "02-20 21h", "02-20 22h", "02-20 23h", "02-21 00h", "02-21 01h", "02-21 02h", "02-21 03h", "02-21 04h", "02-21 05h", "02-21 06h", "02-21 07h", "02-21 08h", "02-21 09h", "02-21 10h", "02-21 11h", "02-21 12h", "02-21 13h", "02-21 14h", "02-21 15h", "02-21 16h", "02-21 17h", "02-21 18h", "02-21 19h", "02-21 20h", "02-21 21h", "02-21 22h", "02-21 23h", "02-22 00h", "02-22 01h", "02-22 02h", "02-22 03h", "02-22 04h", "02-22 05h", "02-22 06h", "02-22 07h", "02-22 08h", "02-22 09h", "02-22 10h", "02-22 11h", "02-22 12h", "02-22 13h", "02-22 14h", "02-22 15h", "02-22 16h", "02-22 17h", "02-22 18h", "02-22 19h", "02-22 20h", "02-22 21h", "02-22 22h", "02-22 23h", "02-23 00h", "02-23 01h", "02-23 02h", "02-23 03h", "02-23 04h", "02-23 05h", "02-23 06h", "02-23 07h", "02-23 08h", "02-23 09h", "02-23 10h", "02-23 11h", "02-23 12h", "02-23 13h", "02-23 14h", "02-23 15h", "02-23 16h", "02-23 17h", "02-23 18h", "02-23 19h", "02-23 20h", "02-23 21h", "02-23 22h", "02-23 23h", "02-24 00h", "02-24 01h", "02-24 02h", "02-24 03h", "02-24 04h", "02-24 05h", "02-24 06h", "02-24 07h", "02-24 08h", "02-24 09h", "02-24 10h", "02-24 11h", "02-24 12h", "02-24 13h", "02-24 14h", "02-24 15h", "02-24 16h", "02-24 17h", "02-24 18h", "02-24 19h", "02-24 20h", "02-24 21h", "02-24 22h", "02-24 23h", "02-25 00h", "02-25 01h", "02-25 02h", "02-25 03h", "02-25 04h", "02-25 05h", "02-25 06h", "02-25 07h", "02-25 08h", "02-25 09h", "02-25 10h", "02-25 11h", "02-25 12h", "02-25 13h", "02-25 14h", "02-25 15h", "02-25 16h", "02-25 17h", "02-25 18h", "02-25 19h", "02-25 20h", "02-25 21h", "02-25 22h", "02-25 23h", "02-26 00h", "02-26 01h", "02-26 02h", "02-26 03h", "02-26 04h", "02-26 05h", "02-26 06h", "02-26 07h", "02-26 08h", "02-26 09h", "02-26 10h", "02-26 11h", "02-26 12h", "02-26 13h", "02-26 14h", "02-26 15h", "02-26 16h", "02-26 17h", "02-26 18h", "02-26 19h", "02-26 20h", "02-26 21h", "02-26 22h", "02-26 23h", "02-27 00h", "02-27 01h", "02-27 02h", "02-27 03h", "02-27 04h", "02-27 05h", "02-27 06h", "02-27 07h", "02-27 08h", "02-27 09h", "02-27 10h", "02-27 11h", "02-27 12h", "02-27 13h", "02-27 14h", "02-27 15h", "02-27 16h", "02-27 17h", "02-27 18h", "02-27 19h", "02-27 20h", "02-27 21h", "02-27 22h", "02-27 23h", "02-28 00h", "02-28 01h", "02-28 02h", "02-28 03h", "02-28 04h", "02-28 05h", "02-28 06h", "02-28 07h", "02-28 08h", "02-28 09h", "02-28 10h", "02-28 11h", "02-28 12h", "02-28 13h", "02-28 14h", "02-28 15h", "02-28 16h", "02-28 17h", "02-28 18h", "02-28 19h", "02-28 20h", "02-28 21h", "02-28 22h", "02-28 23h"], "actual": [71.2, 72.3, 73.3, 76.4, 83.0, 93.0, 111.7, 140.8, 190.3, 261.9, 323.5, 404.8, 439.4, 440.2, 416.9, 352.5, 268.4, 199.6, 147.9, 117.4, 93.8, 83.1, 75.8, 73.5, 72.4, 72.2, 73.7, 77.2, 83.9, 93.7, 112.8, 145.3, 195.1, 257.8, 340.6, 420.3, 457.3, 445.5, 395.8, 337.8, 266.4, 192.9, 145.7, 110.9, 94.2, 83.6, 76.9, 73.2, 72.6, 71.8, 73.8, 77.0, 82.7, 93.8, 110.2, 143.0, 197.9, 247.9, 322.7, 400.1, 447.6, 463.0, 403.7, 333.6, 250.0, 200.9, 149.3, 112.4, 93.1, 82.3, 76.7, 73.7, 71.3, 71.7, 73.6, 77.3, 82.7, 93.4, 112.6, 139.2, 188.8, 246.0, 325.3, 408.9, 442.1, 450.9, 406.2, 342.8, 254.9, 191.0, 146.6, 114.8, 94.1, 81.9, 76.2, 73.7, 70.6, 73.0, 71.4, 71.9, 73.0, 73.7, 74.3, 76.5, 77.1, 82.1, 84.1, 86.6, 88.5, 88.4, 87.1, 85.1, 81.3, 78.4, 75.8, 74.4, 73.8, 72.0, 72.3, 71.8, 72.1, 71.7, 72.4, 72.8, 71.8, 73.4, 75.5, 76.4, 78.2, 82.8, 83.9, 86.3, 89.2, 87.8, 86.4, 85.5, 81.4, 78.7, 78.2, 74.8, 73.5, 72.8, 71.9, 71.5, 71.7, 72.5, 73.4, 77.1, 82.6, 92.9, 111.9, 146.9, 191.9, 242.4, 315.4, 373.7, 425.9, 431.8, 408.3, 319.9, 261.8, 187.2, 146.3, 113.6, 93.5, 82.7, 77.5, 74.3, 72.2, 73.0, 73.5, 75.9, 82.2, 92.9, 108.5, 139.8, 186.1, 256.9, 331.8, 391.1, 441.8, 434.0, 388.0, 324.1, 253.5, 193.3, 147.9, 111.3, 94.5, 83.2, 76.5, 74.3, 72.0, 72.9, 73.2, 75.9, 83.0, 92.3, 109.4, 143.4, 179.7, 240.8, 327.9, 391.0, 429.4, 433.9, 391.2, 323.1, 252.5, 195.0, 148.0, 114.4, 93.2, 83.2, 78.4, 74.3, 71.5, 72.7, 75.1, 76.8, 82.7, 94.6, 110.0, 140.6, 187.8, 247.1, 316.0, 374.9, 417.0, 426.5, 386.2, 317.7, 251.2, 190.9, 141.4, 114.0, 94.2, 83.6, 77.4, 74.2], "pred": [85.4, 85.6, 86.3, 89.3, 93.0, 101.5, 112.5, 171.1, 174.6, 283.3, 390.3, 499.4, 646.7, 642.5, 630.4, 549.0, 313.0, 218.8, 140.4, 144.8, 102.2, 92.5, 88.6, 86.1, 85.3, 85.4, 86.3, 89.3, 92.7, 101.5, 110.8, 171.0, 179.8, 301.0, 396.6, 442.8, 648.9, 655.3, 640.6, 551.3, 313.6, 218.5, 141.7, 145.0, 102.1, 92.1, 88.6, 86.1, 85.3, 85.5, 86.3, 89.2, 92.7, 101.5, 110.8, 171.0, 174.2, 297.3, 366.3, 443.3, 648.4, 644.7, 640.6, 546.8, 312.8, 212.8, 142.5, 145.6, 102.2, 92.1, 88.6, 86.0, 85.3, 85.4, 86.1, 88.0, 88.0, 87.7, 98.1, 168.4, 165.8, 288.1, 358.3, 475.4, 643.9, 659.3, 647.6, 541.1, 295.1, 216.2, 141.8, 144.1, 101.5, 88.0, 85.3, 85.1, 85.3, 84.9, 84.5, 85.7, 85.7, 85.9, 86.5, 87.2, 86.6, 86.1, 86.5, 86.7, 89.1, 87.0, 88.1, 87.3, 86.2, 85.4, 85.4, 85.5, 85.2, 85.1, 84.8, 84.8, 84.8, 84.9, 84.5, 85.7, 85.7, 86.0, 86.6, 87.2, 86.8, 86.8, 86.8, 86.7, 87.2, 89.2, 87.0, 86.4, 85.8, 85.7, 85.7, 85.5, 85.2, 85.2, 84.8, 84.8, 84.8, 85.5, 86.3, 88.3, 88.3, 88.5, 100.7, 169.9, 170.5, 300.7, 352.8, 432.4, 527.6, 658.0, 646.1, 554.6, 296.9, 213.6, 141.0, 142.6, 101.8, 87.8, 85.3, 85.2, 85.3, 85.4, 86.2, 88.2, 88.2, 87.9, 97.0, 158.4, 162.8, 280.4, 359.1, 478.2, 630.7, 646.2, 638.5, 544.6, 294.7, 214.8, 141.3, 144.1, 102.2, 90.0, 85.3, 85.1, 85.2, 85.4, 86.2, 88.2, 88.2, 87.9, 97.0, 157.5, 165.2, 281.3, 335.7, 476.9, 634.6, 647.4, 639.4, 527.5, 294.8, 215.0, 142.8, 142.7, 101.8, 88.2, 85.3, 85.1, 85.2, 85.5, 86.3, 88.2, 88.2, 87.9, 100.6, 165.7, 163.6, 281.4, 350.3, 476.1, 521.3, 651.8, 637.7, 450.9, 294.8, 212.2, 142.6, 144.6, 102.0, 88.3, 85.3, 85.1], "score": [0.61, 0.57, 0.56, 0.55, 0.43, 0.37, 0.04, 1.31, 0.68, 0.92, 2.88, 4.08, 8.95, 8.73, 9.21, 8.48, 1.93, 0.83, 0.32, 1.18, 0.36, 0.41, 0.55, 0.54, 0.56, 0.57, 0.54, 0.52, 0.38, 0.34, 0.09, 1.11, 0.66, 1.86, 2.42, 0.97, 8.27, 9.05, 10.57, 9.21, 2.04, 1.11, 0.17, 1.47, 0.34, 0.37, 0.5, 0.55, 0.55, 0.59, 0.54, 0.53, 0.43, 0.33, 0.03, 1.21, 1.02, 2.13, 1.88, 1.86, 8.66, 7.84, 10.22, 9.2, 2.71, 0.51, 0.29, 1.43, 0.39, 0.42, 0.51, 0.53, 0.61, 0.59, 0.54, 0.46, 0.23, 0.25, 0.63, 1.26, 0.99, 1.82, 1.43, 2.87, 8.71, 8.99, 10.42, 8.56, 1.73, 1.09, 0.21, 1.26, 0.32, 0.26, 0.39, 0.49, 0.63, 0.51, 0.56, 0.6, 0.55, 0.53, 0.53, 0.46, 0.41, 0.17, 0.11, 0.0, 0.03, 0.06, 0.04, 0.09, 0.21, 0.3, 0.42, 0.48, 0.49, 0.57, 0.54, 0.56, 0.55, 0.57, 0.52, 0.56, 0.6, 0.54, 0.48, 0.47, 0.37, 0.17, 0.12, 0.02, 0.09, 0.06, 0.03, 0.04, 0.19, 0.3, 0.32, 0.46, 0.51, 0.53, 0.56, 0.57, 0.56, 0.56, 0.56, 0.48, 0.25, 0.19, 0.48, 0.99, 0.92, 2.51, 1.62, 2.54, 4.39, 9.76, 10.26, 10.13, 1.52, 1.14, 0.23, 1.25, 0.36, 0.22, 0.34, 0.47, 0.57, 0.54, 0.55, 0.53, 0.26, 0.22, 0.5, 0.8, 1.01, 1.01, 1.18, 3.76, 8.15, 9.16, 10.81, 9.51, 1.78, 0.93, 0.28, 1.41, 0.33, 0.29, 0.38, 0.46, 0.57, 0.54, 0.56, 0.53, 0.22, 0.19, 0.53, 0.61, 0.63, 1.75, 0.34, 3.71, 8.86, 9.21, 10.71, 8.82, 1.82, 0.86, 0.22, 1.22, 0.37, 0.21, 0.3, 0.47, 0.59, 0.55, 0.48, 0.49, 0.24, 0.29, 0.41, 1.08, 1.05, 1.48, 1.48, 4.37, 4.5, 9.72, 10.85, 5.75, 1.88, 0.92, 0.05, 1.32, 0.34, 0.2, 0.34, 0.47], "flags": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0], "z": 3.5}, "daily": {"hours": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], "weekday": [83.4, 84.0, 85.6, 89.1, 96.1, 110.0, 135.9, 182.9, 261.1, 371.1, 502.6, 634.0, 712.1, 719.9, 638.2, 519.4, 380.3, 269.0, 189.2, 139.1, 111.2, 96.8, 89.4, 85.8], "weekend": [83.2, 83.2, 83.3, 83.5, 84.0, 85.0, 86.3, 88.6, 91.5, 95.1, 98.6, 101.6, 103.4, 103.7, 102.0, 98.8, 95.3, 91.8, 88.6, 86.4, 85.0, 83.9, 83.7, 83.3]}, "agents": [{"rec": "Relax AC setpoint during off-hours", "kwh": "224.4", "peak": "0.0", "risk": "low", "conf": "1.00 (High)", "action": "BMS off-hours/weekend AC setpoint +2\u00b0C where unoccupied", "status": "accepted"}, {"rec": "Day-ahead pre-cool / peak-shave", "kwh": "-27.2", "peak": "32.3", "risk": "low", "conf": "0.88 (High)", "action": "On forecast high-peak days, pre-cool 05\u201309h; cap peak (acted 9 days)", "status": "accepted"}, {"rec": "Investigate recurring anomaly cluster", "kwh": "flag", "peak": "0.0", "risk": "low", "conf": "0.50 (Med)", "action": "Audit AC/controls around 2019-02-28 14:00 (residual z=10.9)", "status": "accepted"}, {"rec": "Deep AC cut in hottest zone F2Z5", "kwh": "1907.8", "peak": "0.0", "risk": "REJECTED \u2014 zone already at 27.4\u00b0C (\u2265 26.5\u00b0C) \u2014 cutting AC risks comfort", "conf": "0.88 (High)", "action": "Cut AC in F2Z5 (UNVETTED proposal)", "status": "rejected"}], "stats": {"peak_kw": 989.0, "mwh": 640.2, "ac_share": 37.1, "best_mase_h24": 0.337, "best_model_h24": "RandomForest", "peak_red": 32.3, "days_acted": 9, "anom_rate": 8.3, "n_models": 5, "n_features": 21, "foundation": "skipped", "test_start": "2019-02-11", "test_end": "2019-02-28"}, "primary": "Bldg_Total_kW"};
+
+/* ---------- tiny SVG line chart ---------- */
+function lineChart(elId, cfg){
+  const W=cfg.w||760, H=cfg.h||230, pl=46, pr=14, pt=12, pb=26;
+  const pw=W-pl-pr, ph=H-pt-pb;
+  const n=cfg.labels.length;
+  let vals=[];
+  cfg.series.forEach(s=>vals=vals.concat(s.vals.filter(v=>v!=null&&!isNaN(v))));
+  if(cfg.anom) cfg.anom.forEach(a=>vals.push(a.v));
+  let mn=Math.min(...vals), mx=Math.max(...vals);
+  const pad=(mx-mn)*0.08||1; mn-=pad; mx+=pad;
+  const X=i=> pl + (n<=1?0:i/(n-1))*pw;
+  const Y=v=> pt + (1-(v-mn)/(mx-mn))*ph;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'" preserveAspectRatio="xMidYMid meet">';
+  // gridlines + y labels
+  for(let k=0;k<=4;k++){const v=mn+(mx-mn)*k/4, y=Y(v);
+    s+='<line x1="'+pl+'" y1="'+y+'" x2="'+(W-pr)+'" y2="'+y+'" stroke="#2A2A3E" stroke-width="1"/>';
+    s+='<text x="'+(pl-6)+'" y="'+(y+3)+'" text-anchor="end">'+Math.round(v)+'</text>';}
+  // x labels (~6)
+  const step=Math.max(1,Math.floor(n/6));
+  for(let i=0;i<n;i+=step){s+='<text x="'+X(i)+'" y="'+(H-8)+'" text-anchor="middle">'+cfg.labels[i]+'</text>';}
+  // series
+  cfg.series.forEach(se=>{
+    let d='';let started=false;
+    se.vals.forEach((v,i)=>{ if(v==null||isNaN(v)){return;} d+=(started?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' '; started=true;});
+    s+='<path d="'+d+'" fill="none" stroke="'+se.color+'" stroke-width="'+(se.w||1.8)+'"'
+      +(se.dash?' stroke-dasharray="5 4"':'')+' opacity="'+(se.op||1)+'"/>';
+  });
+  // anomalies
+  if(cfg.anom) cfg.anom.forEach(a=>{ s+='<circle cx="'+X(a.i)+'" cy="'+Y(a.v)+'" r="3.6" fill="#EF476F" stroke="#0F0F1A" stroke-width="1"/>';});
+  s+='</svg>';
+  document.getElementById(elId).innerHTML=s;
+}
+
+/* ---------- horizontal bar chart ---------- */
+function barsH(elId, items, opts){
+  opts=opts||{};
+  const W=opts.w||560, rowH=30, H=items.length*rowH+10, labW=104, valW=64, pl=labW, pr=valW;
+  const bw=W-pl-pr;
+  const mx=Math.max(...items.map(d=>d.value));
+  let s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'">';
+  items.forEach((d,i)=>{const y=i*rowH+6, w=Math.max(2,d.value/mx*bw);
+    s+='<text x="'+(pl-8)+'" y="'+(y+15)+'" text-anchor="end" style="fill:#EDEDF5;font-size:11.5px">'+d.label+'</text>';
+    s+='<rect x="'+pl+'" y="'+y+'" width="'+w+'" height="18" rx="4" fill="'+d.color+'" opacity="0.92"/>';
+    s+='<text x="'+(pl+w+7)+'" y="'+(y+14)+'" style="fill:#EDEDF5;font-size:11.5px" class="mono">'+d.val+'</text>';
+  });
+  s+='</svg>';
+  document.getElementById(elId).innerHTML=s;
+}
+
+/* ---------- render ---------- */
+const S=DATA.stats;
+const typeColor={ml:'var(--energy)',baseline:'var(--comfort)',foundation:'var(--coord)'};
+const cards=[
+  ['Peak demand', S.peak_kw+' kW'],
+  ['Energy (period)', S.mwh+' MWh'],
+  ['AC share of load', S.ac_share+'%'],
+  ['Best day-ahead MASE', S.best_mase_h24+' <span style="font-size:12px;color:var(--ok)">'+S.best_model_h24+'</span>'],
+  ['Forecast peak-shave', '↓'+S.peak_red+' kW'],
+  ['Anomaly rate', S.anom_rate+'%'],
+];
+document.getElementById('cards').innerHTML=cards.map(c=>
+  '<div class="card"><div class="v">'+c[1]+'</div><div class="l">'+c[0]+'</div></div>').join('');
+
+document.getElementById('fcModel').textContent=DATA.forecast.model+' (1h)';
+document.getElementById('fcTitle').textContent='One-hour-ahead forecast vs actual — '+DATA.primary;
+lineChart('fc',{w:1180,h:240,labels:DATA.forecast.labels,series:[
+  {vals:DATA.forecast.actual,color:'#EDEDF5',w:2.0},
+  {vals:DATA.forecast.pred,color:'var(--energy)',w:1.8},
+  {vals:DATA.forecast.sn,color:'var(--comfort)',w:1.2,dash:true,op:.85},
+]});
+
+const lb=DATA.leaderboard.h1.slice().reverse();
+barsH('lb', lb.map(r=>({label:r.model,value:r.MAE,
+   val:r.MAE+' kW · MASE '+r.MASE.toFixed(2),color:typeColor[r.type]||'#888'})),{w:560});
+
+lineChart('daily',{w:560,h:230,labels:DATA.daily.hours.map(h=>h+'h'),series:[
+  {vals:DATA.daily.weekday,color:'var(--energy)',w:2.0},
+  {vals:DATA.daily.weekend,color:'var(--comfort)',w:2.0},
+]});
+
+const an=DATA.anomaly;
+const anomPts=[];an.flags.forEach((f,i)=>{if(f)anomPts.push({i:i,v:an.actual[i]});});
+lineChart('anom',{w:560,h:230,labels:an.labels,series:[
+  {vals:an.actual,color:'#EDEDF5',w:1.6},
+  {vals:an.pred,color:'var(--comfort)',w:1.3,op:.85},
+],anom:anomPts});
+
+let rows='<table><tr><th>Recommendation</th><th>kWh</th><th>Peak↓</th><th>Confidence</th><th>Comfort</th></tr>';
+DATA.agents.forEach(a=>{
+  const rej=a.status==='rejected';
+  rows+='<tr class="'+(rej?'rej':'')+'"><td><b>'+a.rec+'</b><div style="color:var(--muted);font-size:11px;margin-top:2px">'+a.action+'</div></td>'
+    +'<td class="mono">'+a.kwh+'</td><td class="mono">'+a.peak+'</td><td class="mono">'+a.conf+'</td>'
+    +'<td>'+(rej?'<span class="pill rej">vetoed</span>':'<span class="pill ok">ok</span>')+'</td></tr>';
+});
+rows+='</table>';
+document.getElementById('agents').innerHTML=rows;
+
+document.getElementById('foot').innerHTML=
+  '<b>How to read this:</b> '+S.n_models+' models &amp; '+S.n_features+
+  ' leakage-safe features; test window '+S.test_start+' → '+S.test_end+
+  '; foundation-model section: <b>'+S.foundation+'</b> (optional, off by default). '+
+  '&nbsp;•&nbsp; <b>Figures are from a synthetic CU-BEMS validation run</b> that proves the pipeline executes end-to-end — '+
+  're-export from a real Kaggle run for real numbers. No data input, no internet, no GPU required.';
+</script>
+</body></html>
